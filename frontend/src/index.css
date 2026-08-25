@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mission-bg: #0A0E14;
+  --color-mission-orange: #FF6B35;
+  --color-mission-cyan: #00D9FF;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-mission-bg text-gray-200 font-sans antialiased;
+    background-image: 
+      linear-gradient(rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}

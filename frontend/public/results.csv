@@ -1,0 +1,4 @@
+sample_id,name,psnr_ai,ssim_ai,psnr_bicubic,ssim_bicubic
+sample_1,Crop Monitoring,30.0,0.85,26.0,0.75
+sample_2,Urban Area,31.5,0.89,27.2,NaN
+sample_3,Disaster Assessment,33.0,0.93,28.4,0.81
