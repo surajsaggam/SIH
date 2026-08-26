@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, Upload, Radio, ChevronRight, CheckCircle2, AlertCircle, Maximize, BarChart3, Database } from 'lucide-react';
+import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database } from 'lucide-react';
 
 export default function App() {
   const [samples, setSamples] = useState([]);
@@ -32,17 +32,17 @@ export default function App() {
 
   const activeSample = samples.find(s => s.sample_id === activeSampleId);
 
-  const handleMouseMove = (e) => {
-    if (!isDragging || !sliderRef.current) return;
-    const rect = sliderRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = (x / rect.width) * 100;
-    setSliderPosition(percentage);
-  };
-
-  const handleMouseUp = () => setIsDragging(false);
-
   useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging || !sliderRef.current) return;
+      const rect = sliderRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percentage = (x / rect.width) * 100;
+      setSliderPosition(percentage);
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -259,21 +259,16 @@ export default function App() {
                       className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                     />
                     
-                    {/* Left Image Clipped */}
+                    {/* Left Image Clipped using clip-path */}
                     <div className="absolute top-4 left-4 z-20 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">
                       {viewMode === 'input_ai' ? 'INPUT // 10m' : 'AI SR // 4×'}
                     </div>
-                    <div 
-                      className="absolute inset-0 overflow-hidden pointer-events-none z-10"
-                      style={{ width: `${sliderPosition}%` }}
-                    >
-                      <img 
-                        src={viewMode === 'input_ai' ? `/${activeSample.sample_id}_input.png` : `/${activeSample.sample_id}_output.png`}
-                        alt="Left"
-                        className="absolute inset-0 max-w-none h-full object-contain" 
-                        style={{ width: sliderRef.current?.offsetWidth || '100%' }}
-                      />
-                    </div>
+                    <img 
+                      src={viewMode === 'input_ai' ? `/${activeSample.sample_id}_input.png` : `/${activeSample.sample_id}_output.png`}
+                      alt="Left"
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" 
+                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                    />
 
                     {/* Slider Handle */}
                     <div 

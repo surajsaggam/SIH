@@ -1,6 +1,7 @@
 import os
 import csv
 import random
+# pyrefly: ignore [missing-import]
 from PIL import Image, ImageDraw, ImageFilter
 
 def generate_satellite_texture(size, base_color, noise_level):
