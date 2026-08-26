@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database } from 'lucide-react';
+import GlobeHero from './components/GlobeHero';
+import SystemTelemetry from './components/SystemTelemetry';
 
 export default function App() {
   const [samples, setSamples] = useState([]);
@@ -123,8 +125,10 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1920px] mx-auto w-full px-6 py-6 grid grid-cols-12 gap-8 z-10 relative">
+      <main className="flex-1 max-w-[1920px] mx-auto w-full px-6 py-6 z-10 relative">
+        <GlobeHero />
         
+        <div className="grid grid-cols-12 gap-8">
         {/* LEFT SIDEBAR */}
         <div className="col-span-12 lg:col-span-3 xl:col-span-2 flex flex-col gap-6">
           <div className="border border-mission-cyan/10 bg-black/40 p-4 rounded-sm backdrop-blur-sm">
@@ -193,8 +197,9 @@ export default function App() {
           
           {/* HERO VIEWER */}
           {activeSample && (
-            <div className="flex flex-col gap-4">
-              {/* Viewer Controls */}
+            <SystemTelemetry activeSample={activeSample}>
+              <div className="flex flex-col gap-4">
+                {/* Viewer Controls */}
               <div className="flex items-end justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-gray-200 uppercase tracking-widest flex items-center gap-2">
@@ -287,6 +292,7 @@ export default function App() {
                 )}
               </div>
             </div>
+            </SystemTelemetry>
           )}
 
           {/* PIPELINE STRIP */}
@@ -503,6 +509,7 @@ export default function App() {
             </div>
           </div>
 
+        </div>
         </div>
       </main>
     </div>
