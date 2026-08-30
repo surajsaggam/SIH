@@ -1,0 +1,18 @@
+{
+    "model": "SwinIR",
+    "task": "Classical Image Super Resolution",
+    "scale_factor": 4,
+    "input_channels": 3,
+    "training_input_size": [
+        64,
+        64
+    ],
+    "training_output_size": [
+        256,
+        256
+    ],
+    "normalization": "[0, 1]",
+    "dataset": "SEN2NAIP",
+    "pretrained_model": "SwinIR Classical SR x4",
+    "epochs": 5
+}

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Dataset cache
+dataset_cache/
+
+# Training checkpoints
+checkpoints/
+
+# Generated outputs
+outputs/
+
+# Ignore PyTorch files by default
+*.pth
+*.pt
+
+# Keep deployment model
+!deployment_model/
+!deployment_model/swinir_sentinel2_x4.pth
+!deployment_model/model_config.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
