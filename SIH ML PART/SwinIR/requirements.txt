@@ -1,0 +1,10 @@
+torch
+torchvision
+timm
+numpy
+opencv-python
+einops
+tacoreader<1.0
+rasterio
+matplotlib
+tqdm
