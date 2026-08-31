@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database } from 'lucide-react';
+import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database, Upload, Loader2, Download } from 'lucide-react';
 import GlobeHero from './components/GlobeHero';
 import SystemTelemetry from './components/SystemTelemetry';
 
@@ -9,7 +9,29 @@ export default function App() {
   const [viewMode, setViewMode] = useState('input_ai'); // input_ai, ai_ref, threeway
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [customSample, setCustomSample] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const sliderRef = useRef(null);
+  const analysisRef = useRef(null);
+  const satelliteRef = useRef(null);
+
+  const handleLaunchAnalysis = () => {
+    analysisRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  const handleViewFleet = () => {
+    satelliteRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  console.log("isUploading:", isUploading);
 
   useEffect(() => {
     fetch('/results.csv')
@@ -32,31 +54,112 @@ export default function App() {
       .catch(err => console.error("Error loading CSV:", err));
   }, []);
 
-  const activeSample = samples.find(s => s.sample_id === activeSampleId);
+  const handleFileUpload = async (e) => {
+    const targetEl = e.target;
+    const file = targetEl?.files?.[0];
+    if (!file) return;
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDragging || !sliderRef.current) return;
-      const rect = sliderRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      const percentage = (x / rect.width) * 100;
-      setSliderPosition(percentage);
-    };
+    console.log("handleFileUpload start");
+    setIsUploading(true);
+    setUploadError(null);
 
-    const handleMouseUp = () => setIsDragging(false);
+    try {
+      const inputUrl = URL.createObjectURL(file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    } else {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      const response = await fetch('http://127.0.0.1:8000/enhance', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || `Server responded with ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const outputUrl = URL.createObjectURL(blob);
+
+      const newCustomSample = {
+        sample_id: 'custom',
+        name: file.name,
+        inputUrl,
+        outputUrl,
+        psnr_ai: 'N/A',
+        ssim_ai: 'N/A',
+        psnr_bicubic: 'N/A',
+        ssim_bicubic: 'N/A',
+      };
+
+      setCustomSample(newCustomSample);
+      setActiveSampleId('custom');
+    } catch (err) {
+      console.error("Upload error caught in catch:", err);
+      setUploadError(err.message || 'Failed to process image with SwinIR backend.');
+    } finally {
+      setIsUploading(false);
+      try {
+        if (targetEl) targetEl.value = '';
+      } catch (targetErr) {
+        console.error("ERROR resetting target value:", targetErr);
+      }
+      console.log("handleFileUpload end");
     }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
+  };
+
+  const activeSample = activeSampleId === 'custom'
+    ? customSample
+    : samples.find(s => s.sample_id === activeSampleId);
+
+  const getImageSrc = (sample, type) => {
+    if (!sample) return '';
+    if (sample.sample_id === 'custom') {
+      if (type === 'input') return sample.inputUrl;
+      if (type === 'output') return sample.outputUrl;
+      if (type === 'reference') return sample.outputUrl;
+    }
+    if (type === 'input') return `/${sample.sample_id}_input.png`;
+    if (type === 'output') return `/${sample.sample_id}_output.png`;
+    if (type === 'reference') return `/${sample.sample_id}_reference.png`;
+    return '';
+  };
+
+  const handleDownload = () => {
+    const outputSrc = getImageSrc(activeSample, 'output');
+    if (!outputSrc) return;
+    const a = document.createElement('a');
+    a.href = outputSrc;
+    a.download = activeSample?.sample_id === 'custom'
+      ? 'PICT_SwinIR_x4_256x256.png'
+      : `${activeSample.sample_id}_SwinIR_x4.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleSliderMove = (e) => {
+    if (!sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = (x / rect.width) * 100;
+    setSliderPosition(Math.min(100, Math.max(0, percentage)));
+  };
+
+  const handleSliderPointerDown = (e) => {
+    if (e.currentTarget.setPointerCapture) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+    handleSliderMove(e);
+  };
+
+  const handleSliderPointerMove = (e) => {
+    if (e.buttons === 1) {
+      handleSliderMove(e);
+    }
+  };
 
   const formatVal = (val, decimals) => {
     if (val === undefined || val === null || val === "" || val === "NaN" || isNaN(parseFloat(val))) return "N/A";
@@ -106,7 +209,7 @@ export default function App() {
           <div className="flex items-center gap-8 text-xs font-mono">
             <div className="flex items-center gap-2 text-mission-cyan">
               <div className="w-1.5 h-1.5 bg-mission-cyan rounded-full"></div>
-              <span>MODEL: Real-ESRGAN v0.3.0</span>
+              <span>MODEL: Sentinel-2 SwinIR x4</span>
             </div>
             <div className="flex items-center gap-2 text-mission-orange">
               <div className="w-1.5 h-1.5 bg-mission-orange rounded-full animate-pulse"></div>
@@ -119,19 +222,19 @@ export default function App() {
             <div className="h-6 w-px bg-gray-800"></div>
             <div className="flex flex-col items-end text-[10px] text-gray-500">
               <span>MISSION: SIH 2026</span>
-              <span>MODE: DEMONSTRATION</span>
+              <span>MODE: LIVE INFERENCE</span>
             </div>
           </div>
         </div>
       </header>
 
       <main className="flex-1 max-w-[1920px] mx-auto w-full px-6 py-6 z-10 relative">
-        <GlobeHero />
+        <GlobeHero onLaunchAnalysis={handleLaunchAnalysis} onViewFleet={handleViewFleet} />
         
         <div className="grid grid-cols-12 gap-8">
         {/* LEFT SIDEBAR */}
         <div className="col-span-12 lg:col-span-3 xl:col-span-2 flex flex-col gap-6">
-          <div className="border border-mission-cyan/10 bg-black/40 p-4 rounded-sm backdrop-blur-sm">
+          <div ref={satelliteRef} className="border border-mission-cyan/10 bg-black/40 p-4 rounded-sm backdrop-blur-sm">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Database size={14} className="text-mission-cyan" /> DATASET / SCENE
             </h2>
@@ -162,7 +265,69 @@ export default function App() {
                   </button>
                 );
               })}
+
+              {customSample && (
+                <button
+                  onClick={() => setActiveSampleId('custom')}
+                  className={`text-left px-3 py-2 rounded-sm transition-all border-l-2 group ${
+                    activeSampleId === 'custom'
+                      ? 'bg-mission-cyan/10 border-mission-cyan'
+                      : 'hover:bg-gray-800/50 border-transparent hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-mission-cyan">
+                      04
+                    </span>
+                    <span className="text-xs font-bold tracking-wide text-gray-200 truncate">
+                      {customSample.name}
+                    </span>
+                  </div>
+                  <div className="text-[10px] mt-1 ml-6 text-mission-cyan">
+                    Custom SwinIR 4× Enhanced
+                  </div>
+                </button>
+              )}
             </div>
+          </div>
+
+          {/* UPLOAD SECTION */}
+          <div ref={analysisRef} className="border border-mission-cyan/20 bg-black/50 p-4 rounded-sm">
+            <h2 className="text-[10px] font-bold text-mission-cyan uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Upload size={12} /> LIVE SWINIR INFERENCE
+            </h2>
+            <label
+              htmlFor="image-upload-input"
+              className={`flex flex-col items-center justify-center border-2 border-dashed border-gray-700 hover:border-mission-cyan/60 rounded-sm p-4 cursor-pointer transition-colors ${
+                isUploading ? 'opacity-50 pointer-events-none' : ''
+              }`}
+            >
+              {isUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 size={20} className="text-mission-cyan animate-spin" />
+                  <span className="text-[10px] font-mono text-mission-cyan">RUNNING SWINIR 4×...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <Upload size={18} className="text-mission-cyan mb-1" />
+                  <span className="text-xs font-bold text-gray-300">UPLOAD SENTINEL-2 IMAGE</span>
+                  <span className="text-[9px] font-mono text-gray-500">Supports PNG, JPG, TIFF</span>
+                </div>
+              )}
+            </label>
+            <input
+              id="image-upload-input"
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isUploading}
+            />
+            {uploadError && (
+              <div className="mt-2 text-[10px] font-mono text-red-400 bg-red-950/40 p-2 border border-red-800 rounded-sm">
+                {uploadError}
+              </div>
+            )}
           </div>
 
           <div className="border border-gray-800 bg-black/40 p-4 rounded-sm">
@@ -170,7 +335,9 @@ export default function App() {
             <div className="flex flex-col gap-3 text-xs font-mono">
               <div>
                 <div className="text-[10px] text-gray-600">Sample ID:</div>
-                <div className="text-mission-cyan">SRM-{activeSampleId ? activeSampleId.split('_')[1].toUpperCase() : '001'}-001</div>
+                <div className="text-mission-cyan">
+                  {activeSampleId === 'custom' ? 'LIVE-UPLOAD' : `SRM-${activeSampleId ? activeSampleId.split('_')[1].toUpperCase() : '001'}-001`}
+                </div>
               </div>
               <div>
                 <div className="text-[10px] text-gray-600">SOURCE:</div>
@@ -186,7 +353,7 @@ export default function App() {
               </div>
               <div>
                 <div className="text-[10px] text-gray-600">MODEL:</div>
-                <div className="text-gray-300">Real-ESRGAN</div>
+                <div className="text-gray-300">SwinIR Sentinel-2</div>
               </div>
             </div>
           </div>
@@ -206,90 +373,185 @@ export default function App() {
                     SATELLITE IMAGE COMPARISON
                   </h2>
                   <div className="text-xs font-mono text-gray-500 mt-1 flex gap-4">
-                    <span>SCENE: {activeSample.name.toUpperCase()}</span>
+                    <span>SCENE: {(activeSample.name || activeSample.sample_id).toUpperCase()}</span>
                     <span>BAND COMPOSITE: RGB</span>
                   </div>
                 </div>
-                <div className="flex bg-black/60 border border-gray-800 rounded-sm p-1">
-                  {[
-                    { id: 'input_ai', label: 'INPUT ↔ AI SR' },
-                    { id: 'ai_ref', label: 'AI SR ↔ REF' },
-                    { id: 'threeway', label: '3-WAY VIEW' }
-                  ].map(mode => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setViewMode(mode.id)}
-                      className={`px-4 py-1.5 text-[10px] font-mono tracking-widest uppercase transition-colors ${
-                        viewMode === mode.id
-                          ? 'bg-mission-cyan/20 text-mission-cyan border border-mission-cyan/50'
-                          : 'text-gray-500 hover:text-gray-300 border border-transparent'
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
+                
+                <div className="flex items-center gap-4">
+                  {/* DOWNLOAD BUTTON */}
+                  <button
+                    onClick={handleDownload}
+                    disabled={!getImageSrc(activeSample, 'output')}
+                    className="flex items-center gap-2 px-3.5 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase transition-all bg-mission-cyan/20 text-mission-cyan border border-mission-cyan/50 hover:bg-mission-cyan hover:text-black rounded-xs disabled:opacity-40 disabled:pointer-events-none"
+                    title="Download 4x Super-Resolved PNG"
+                  >
+                    <Download size={12} />
+                    <span>DOWNLOAD ENHANCED IMAGE</span>
+                  </button>
+
+                  {/* ZOOM CONTROLS */}
+                  <div className="flex items-center gap-1 bg-black/60 border border-gray-800 rounded-sm p-1">
+                    <span className="text-[9px] font-mono text-gray-400 px-2 uppercase">ZOOM:</span>
+                    {[1, 2, 4].map(z => (
+                      <button
+                        key={z}
+                        onClick={() => setZoomLevel(z)}
+                        className={`px-2.5 py-1 text-[10px] font-mono transition-colors rounded-xs ${
+                          zoomLevel === z
+                            ? 'bg-mission-cyan text-black font-bold'
+                            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                        }`}
+                      >
+                        {z}×
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* VIEW MODE TOGGLES */}
+                  <div className="flex bg-black/60 border border-gray-800 rounded-sm p-1">
+                    {[
+                      { id: 'input_ai', label: 'INPUT ↔ AI SR' },
+                      { id: 'ai_ref', label: 'AI SR ↔ REF' },
+                      { id: 'threeway', label: '3-WAY VIEW' }
+                    ].map(mode => (
+                      <button
+                        key={mode.id}
+                        onClick={() => setViewMode(mode.id)}
+                        className={`px-4 py-1.5 text-[10px] font-mono tracking-widest uppercase transition-colors ${
+                          viewMode === mode.id
+                            ? 'bg-mission-cyan/20 text-mission-cyan border border-mission-cyan/50'
+                            : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Viewport */}
-              <div className="border border-gray-800 bg-black/40 p-1 rounded-sm w-full">
-                {viewMode === 'threeway' ? (
-                  <div className="grid grid-cols-3 gap-1 h-[60vh] max-h-[700px] bg-black">
-                    <div className="relative group overflow-hidden">
-                      <div className="absolute top-2 left-2 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">INPUT // 10m</div>
-                      <img src={`/${activeSample.sample_id}_input.png`} alt="Input" className="w-full h-full object-contain" />
+                {/* Viewport */}
+                <div className="border border-gray-800 bg-black/40 p-1 rounded-sm w-full">
+                  {viewMode === 'threeway' ? (
+                    <div className="grid grid-cols-3 gap-1 h-[60vh] max-h-[700px] bg-black select-none">
+                      <div className="relative group overflow-hidden">
+                        <div className="absolute top-2 left-2 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">INPUT // 10m</div>
+                        <img src={getImageSrc(activeSample, 'input')} alt="Input" className="w-full h-full object-contain" style={{ transform: `scale(${zoomLevel})`, imageRendering: zoomLevel > 1 ? 'pixelated' : 'auto' }} />
+                      </div>
+                      <div className="relative group overflow-hidden border-x border-gray-800">
+                        <div className="absolute top-2 left-2 z-10 bg-mission-cyan/20 px-2 py-1 text-[10px] font-mono text-mission-cyan border border-mission-cyan/50 backdrop-blur-sm">AI SR // 4×</div>
+                        <img src={getImageSrc(activeSample, 'output')} alt="AI Output" className="w-full h-full object-contain" style={{ transform: `scale(${zoomLevel})` }} />
+                      </div>
+                      <div className="relative group overflow-hidden">
+                        <div className="absolute top-2 right-2 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">REFERENCE // VENµS</div>
+                        <img src={getImageSrc(activeSample, 'reference')} alt="Reference" className="w-full h-full object-contain" style={{ transform: `scale(${zoomLevel})` }} />
+                      </div>
                     </div>
-                    <div className="relative group overflow-hidden border-x border-gray-800">
-                      <div className="absolute top-2 left-2 z-10 bg-mission-cyan/20 px-2 py-1 text-[10px] font-mono text-mission-cyan border border-mission-cyan/50 backdrop-blur-sm">AI SR // 4×</div>
-                      <img src={`/${activeSample.sample_id}_output.png`} alt="AI Output" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="relative group overflow-hidden">
-                      <div className="absolute top-2 right-2 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">REFERENCE // VENµS</div>
-                      <img src={`/${activeSample.sample_id}_reference.png`} alt="Reference" className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    ref={sliderRef}
-                    className="relative h-[60vh] max-h-[700px] w-full overflow-hidden cursor-ew-resize select-none bg-black"
-                    onMouseDown={() => setIsDragging(true)}
-                  >
-                    {/* Right Image Base */}
-                    <div className="absolute top-4 right-4 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono border backdrop-blur-sm transition-colors border-mission-cyan/50 text-mission-cyan">
-                      {viewMode === 'input_ai' ? 'AI SR // 4×' : 'REFERENCE // VENµS'}
-                    </div>
-                    <img 
-                      src={viewMode === 'input_ai' ? `/${activeSample.sample_id}_output.png` : `/${activeSample.sample_id}_reference.png`}
-                      alt="Right"
-                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                    />
-                    
-                    {/* Left Image Clipped using clip-path */}
-                    <div className="absolute top-4 left-4 z-20 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">
-                      {viewMode === 'input_ai' ? 'INPUT // 10m' : 'AI SR // 4×'}
-                    </div>
-                    <img 
-                      src={viewMode === 'input_ai' ? `/${activeSample.sample_id}_input.png` : `/${activeSample.sample_id}_output.png`}
-                      alt="Left"
-                      className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10" 
-                      style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                    />
-
-                    {/* Slider Handle */}
-                    <div 
-                      className="absolute top-0 bottom-0 w-px bg-mission-cyan shadow-[0_0_8px_rgba(0,217,255,0.8)] z-30 flex items-center justify-center pointer-events-none"
-                      style={{ left: `${sliderPosition}%` }}
+                  ) : (
+                    <div
+                      ref={sliderRef}
+                      className="relative w-full aspect-square max-h-[700px] overflow-hidden select-none bg-black cursor-col-resize mx-auto"
+                      style={{ touchAction: 'none' }}
+                      onPointerDown={handleSliderPointerDown}
+                      onPointerMove={handleSliderPointerMove}
                     >
-                      <div className="w-6 h-6 rounded-full bg-[#0A0E14] border border-mission-cyan flex items-center justify-center shadow-[0_0_10px_rgba(0,217,255,0.4)]">
-                        <div className="w-3 h-px bg-mission-cyan rotate-90 absolute"></div>
-                        <div className="w-3 h-px bg-mission-cyan absolute"></div>
+                      {/* AI SR OUTPUT — BASE LAYER */}
+                      <div className="absolute top-4 right-4 z-10 bg-black/80 px-2.5 py-1.5 text-[10px] font-mono border backdrop-blur-sm transition-colors border-mission-cyan/50 text-mission-cyan flex flex-col items-end gap-0.5 pointer-events-none">
+                        <span className="font-bold">{viewMode === 'input_ai' ? 'AI SR (SWINIR ×4)' : 'REFERENCE (VENµS)'}</span>
+                        <span className="text-[9px] text-gray-400">
+                          {viewMode === 'input_ai' 
+                            ? (activeSample.sample_id === 'custom' ? '256 × 256 px | 4 m/pixel' : '4 m/pixel')
+                            : '4 m/pixel'}
+                        </span>
                       </div>
-                      <div className="absolute -top-6 bg-black/80 px-1.5 py-0.5 text-[8px] font-mono text-mission-cyan border border-mission-cyan/30 rounded-sm">
-                        {Math.round(sliderPosition)}%
+                      <img
+                        src={viewMode === 'input_ai' ? getImageSrc(activeSample, 'output') : getImageSrc(activeSample, 'reference')}
+                        alt="AI Super Resolution"
+                        draggable={false}
+                        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                        style={{ transform: `scale(${zoomLevel})`, transformOrigin: `${sliderPosition}% 50%` }}
+                      />
+
+                      {/* ORIGINAL INPUT — CLIPPED OVERLAY */}
+                      <div className="absolute top-4 left-4 z-20 bg-black/80 px-2.5 py-1.5 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm flex flex-col gap-0.5 pointer-events-none">
+                        <span className="font-bold">{viewMode === 'input_ai' ? 'INPUT' : 'AI SR (SWINIR ×4)'}</span>
+                        <span className="text-[9px] text-gray-400">
+                          {viewMode === 'input_ai' 
+                            ? (activeSample.sample_id === 'custom' ? '64 × 64 px | 10 m/pixel' : '10 m/pixel')
+                            : (activeSample.sample_id === 'custom' ? '256 × 256 px | 4 m/pixel' : '4 m/pixel')}
+                        </span>
+                      </div>
+                      <div
+                        className="absolute inset-0 overflow-hidden pointer-events-none z-10"
+                        style={{
+                          width: `${sliderPosition}%`,
+                        }}
+                      >
+                        <img
+                          src={viewMode === 'input_ai' ? getImageSrc(activeSample, 'input') : getImageSrc(activeSample, 'output')}
+                          alt="Original Sentinel-2 Input"
+                          draggable={false}
+                          className="absolute inset-0 w-full h-full object-contain"
+                          style={{
+                            width: sliderRef.current ? `${sliderRef.current.clientWidth}px` : '100%',
+                            maxWidth: 'none',
+                            transform: `scale(${zoomLevel})`,
+                            transformOrigin: `${sliderPosition}% 50%`,
+                            imageRendering: (viewMode === 'input_ai' && zoomLevel > 1) ? 'pixelated' : 'auto'
+                          }}
+                        />
+                      </div>
+
+                      {/* VERTICAL COMPARISON DIVIDER */}
+                      <div
+                        className="absolute top-0 bottom-0 w-[2px] bg-mission-cyan z-20 pointer-events-none shadow-[0_0_10px_rgba(0,217,255,0.9)]"
+                        style={{
+                          left: `${sliderPosition}%`,
+                          transform: 'translateX(-50%)',
+                        }}
+                      >
+                        <div
+                          className="
+                            absolute top-1/2 left-1/2
+                            -translate-x-1/2 -translate-y-1/2
+                            w-10 h-10 rounded-full
+                            border-2 border-mission-cyan
+                            bg-black/80
+                            flex items-center justify-center
+                            shadow-[0_0_12px_rgba(0,217,255,0.6)]
+                          "
+                        >
+                          <span className="text-mission-cyan text-xs font-bold">↔</span>
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                {/* EXPLICIT METADATA BADGES UNDERNEATH VIEWPORT */}
+                <div className="grid grid-cols-2 gap-4 mt-2 bg-black/80 border border-gray-800 p-2.5 rounded-sm font-mono text-xs">
+                  <div className="flex items-center justify-between border-r border-gray-800 pr-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <span className="text-gray-300 font-bold">INPUT IMAGE</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-[11px]">
+                      <span className="text-gray-400">DIMENSIONS: <strong className="text-gray-200">{activeSample.sample_id === 'custom' ? '64 × 64 px' : 'LR (10m)'}</strong></span>
+                      <span className="text-mission-cyan">SPATIAL: <strong>10 m/pixel</strong></span>
+                    </div>
                   </div>
-                )}
+
+                  <div className="flex items-center justify-between pl-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-mission-cyan rounded-full animate-pulse"></div>
+                      <span className="text-mission-cyan font-bold">AI SR (SWINIR ×4)</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-[11px]">
+                      <span className="text-gray-400">DIMENSIONS: <strong className="text-gray-200">{activeSample.sample_id === 'custom' ? '256 × 256 px' : 'SR (4m)'}</strong></span>
+                      <span className="text-mission-orange">SPATIAL: <strong>4 m/pixel</strong></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             </SystemTelemetry>

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import Globe from 'react-globe.gl';
 import { Rocket, Satellite } from 'lucide-react';
 
-export default function GlobeHero() {
+export default function GlobeHero({ onLaunchAnalysis, onViewFleet }) {
   const globeEl = useRef();
   const containerRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 500, height: 500 });
@@ -52,11 +52,17 @@ export default function GlobeHero() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <button className="bg-mission-cyan/20 text-mission-cyan font-mono font-bold text-xs tracking-widest px-6 py-3 rounded-sm border border-mission-cyan/50 hover:bg-mission-cyan/30 transition-colors flex items-center justify-center gap-2 uppercase">
+          <button 
+            onClick={onLaunchAnalysis}
+            className="bg-mission-cyan/20 text-mission-cyan font-mono font-bold text-xs tracking-widest px-6 py-3 rounded-sm border border-mission-cyan/50 hover:bg-mission-cyan/30 transition-colors flex items-center justify-center gap-2 uppercase cursor-pointer"
+          >
             <Rocket size={16} />
             Launch Analysis
           </button>
-          <button className="bg-transparent text-mission-cyan font-mono font-bold text-xs tracking-widest px-6 py-3 rounded-sm border border-mission-cyan hover:bg-mission-cyan/10 transition-colors flex items-center justify-center gap-2 uppercase">
+          <button 
+            onClick={onViewFleet}
+            className="bg-transparent text-mission-cyan font-mono font-bold text-xs tracking-widest px-6 py-3 rounded-sm border border-mission-cyan hover:bg-mission-cyan/10 transition-colors flex items-center justify-center gap-2 uppercase cursor-pointer"
+          >
             <Satellite size={16} />
             View Satellite Fleet
           </button>

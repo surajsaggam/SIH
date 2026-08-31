@@ -31,6 +31,13 @@ def load_swinir_model(
     """
     Loads the fine-tuned SwinIR model.
     """
+    import os
+
+    if not os.path.isabs(model_path) and not os.path.exists(model_path):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        resolved_path = os.path.join(base_dir, model_path)
+        if os.path.exists(resolved_path):
+            model_path = resolved_path
 
     if device is None:
         device = torch.device(
