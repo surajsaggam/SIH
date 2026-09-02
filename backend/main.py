@@ -4,6 +4,7 @@ import io
 import uuid
 import numpy as np
 import torch
+import asyncio
 from PIL import Image
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -53,11 +54,6 @@ app.add_middleware(
 @app.post("/enhance")
 async def enhance_image(file: UploadFile = File(...)):
     global swinir_model, model_device
-    if swinir_model is None:
-        # Fallback load if not initialized
-        checkpoint_path = os.path.join(SWINIR_DIR, "deployment_model", "swinir_sentinel2_x4.pth")
-        swinir_model, model_device = load_swinir_model(model_path=checkpoint_path)
-
     print(f"[UPLOAD] Received: {file.filename}")
 
     try:
@@ -70,6 +66,29 @@ async def enhance_image(file: UploadFile = File(...)):
         except Exception as img_err:
             print(f"[ERROR] Upload is not a valid image: {img_err}")
             raise HTTPException(status_code=400, detail="Invalid image file format.")
+
+        # Validate image dimensions early to prevent hanging inference
+        max_dim = max(pil_image.width, pil_image.height)
+        print(f"[UPLOAD] Dimensions: {pil_image.width}x{pil_image.height} (Max: {max_dim}px)")
+        
+        if max_dim > 2048:
+            print(f"[REJECTED] Image too large: {max_dim}px")
+            raise HTTPException(
+                status_code=400, 
+                detail="Image too large for real-time demo processing. Please upload a smaller tile (under 2048x2048px)."
+            )
+        if max_dim > 512:
+            print(f"[REJECTED] Already high-resolution: {max_dim}px")
+            raise HTTPException(
+                status_code=400, 
+                detail="This image already appears to be high-resolution — super-resolution enhancement is intended for lower-resolution inputs (e.g. 10m Sentinel-2 imagery). Try uploading a lower-resolution satellite image instead."
+            )
+
+        if swinir_model is None:
+            # Fallback load if not initialized
+            print("[INFO] Fallback model loading started...")
+            checkpoint_path = os.path.join(SWINIR_DIR, "deployment_model", "swinir_sentinel2_x4.pth")
+            swinir_model, model_device = load_swinir_model(model_path=checkpoint_path)
 
         # Generate unique filename for persistent storage
         file_id = str(uuid.uuid4())[:8]
@@ -89,20 +108,44 @@ async def enhance_image(file: UploadFile = File(...)):
         img_np = np.array(pil_image, dtype=np.float32) / 255.0
         input_tensor = torch.from_numpy(img_np).permute(2, 0, 1).float()
 
-        # Run SwinIR 4x Super-Resolution
+        # Run SwinIR 4x Super-Resolution with hard timeout
         print("[MODEL] Running SwinIR x4...")
-        sr_tensor = super_resolve(
-            image_tensor=input_tensor,
-            model=swinir_model,
-            device=model_device,
-            tile=128,
-            tile_overlap=16
-        )
+        try:
+            sr_tensor = await asyncio.wait_for(
+                asyncio.to_thread(
+                    super_resolve,
+                    image_tensor=input_tensor,
+                    model=swinir_model,
+                    device=model_device,
+                    tile=128,
+                    tile_overlap=16
+                ),
+                timeout=45.0
+            )
+        except asyncio.TimeoutError:
+            print("[ERROR] Inference timeout exceeded")
+            raise HTTPException(
+                status_code=408, 
+                detail="Processing took too long — please try a smaller image or try again."
+            )
         print("[MODEL] Inference completed")
 
         # Convert output tensor [3, 4H, 4W] back to PIL Image
         sr_np = (sr_tensor.permute(1, 2, 0).numpy() * 255.0).round().astype(np.uint8)
         output_image = Image.fromarray(sr_np)
+
+        # Calculate metrics against a Bicubic baseline
+        bicubic_image = pil_image.resize((output_image.width, output_image.height), Image.Resampling.BICUBIC)
+        bicubic_np = np.array(bicubic_image)
+        
+        try:
+            from utils.util_calculate_psnr_ssim import calculate_psnr, calculate_ssim
+            psnr_val = calculate_psnr(sr_np, bicubic_np, crop_border=4, input_order='HWC')
+            ssim_val = calculate_ssim(sr_np, bicubic_np, crop_border=4, input_order='HWC')
+        except Exception as metric_err:
+            print(f"[WARNING] Failed to calculate metrics: {metric_err}")
+            psnr_val = None
+            ssim_val = None
 
         # Save output image to byte stream
         img_byte_arr = io.BytesIO()
@@ -116,8 +159,15 @@ async def enhance_image(file: UploadFile = File(...)):
             f.write(png_bytes)
         print(f"[OUTPUT] Saved enhanced image: {output_save_path}")
 
-        print(f"[RESPONSE] Returning enhanced PNG: {len(png_bytes)} bytes")
-        return Response(content=png_bytes, media_type="image/png")
+        import base64
+        base64_encoded = base64.b64encode(png_bytes).decode('utf-8')
+
+        print(f"[RESPONSE] Returning enhanced PNG + metrics")
+        return {
+            "image": base64_encoded,
+            "psnr_ai": psnr_val,
+            "ssim_ai": ssim_val
+        }
     except HTTPException:
         raise
     except Exception as e:

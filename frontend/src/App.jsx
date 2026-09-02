@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database, Upload, Loader2, Download } from 'lucide-react';
 import GlobeHero from './components/GlobeHero';
 import SystemTelemetry from './components/SystemTelemetry';
+import ErrorHeatmap from './components/ErrorHeatmap';
 
 export default function App() {
   const [samples, setSamples] = useState([]);
@@ -74,20 +75,26 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || `Server responded with ${response.status}`);
+        let errorMsg = `Server responded with ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData.detail) errorMsg = errData.detail;
+        } catch (e) {
+          errorMsg = await response.text();
+        }
+        throw new Error(errorMsg);
       }
 
-      const blob = await response.blob();
-      const outputUrl = URL.createObjectURL(blob);
+      const data = await response.json();
+      const outputUrl = `data:image/png;base64,${data.image}`;
 
       const newCustomSample = {
         sample_id: 'custom',
         name: file.name,
         inputUrl,
         outputUrl,
-        psnr_ai: 'N/A',
-        ssim_ai: 'N/A',
+        psnr_ai: data.psnr_ai ?? 'N/A',
+        ssim_ai: data.ssim_ai ?? 'N/A',
         psnr_bicubic: 'N/A',
         ssim_bicubic: 'N/A',
       };
@@ -113,11 +120,11 @@ export default function App() {
     : samples.find(s => s.sample_id === activeSampleId);
 
   const getImageSrc = (sample, type) => {
-    if (!sample) return '';
+    if (!sample) return null;
     if (sample.sample_id === 'custom') {
       if (type === 'input') return sample.inputUrl;
       if (type === 'output') return sample.outputUrl;
-      if (type === 'reference') return sample.outputUrl;
+      if (type === 'reference') return sample.inputUrl;
     }
     if (type === 'input') return `/${sample.sample_id}_input.png`;
     if (type === 'output') return `/${sample.sample_id}_output.png`;
@@ -434,7 +441,7 @@ export default function App() {
                 {/* Viewport */}
                 <div className="border border-gray-800 bg-black/40 p-1 rounded-sm w-full">
                   {viewMode === 'threeway' ? (
-                    <div className="grid grid-cols-3 gap-1 h-[60vh] max-h-[700px] bg-black select-none">
+                    <div className="grid grid-cols-3 gap-1 h-[60vh] max-h-[450px] bg-black select-none">
                       <div className="relative group overflow-hidden">
                         <div className="absolute top-2 left-2 z-10 bg-black/80 px-2 py-1 text-[10px] font-mono text-gray-300 border border-gray-700 backdrop-blur-sm">INPUT // 10m</div>
                         <img src={getImageSrc(activeSample, 'input')} alt="Input" className="w-full h-full object-contain" style={{ transform: `scale(${zoomLevel})`, imageRendering: zoomLevel > 1 ? 'pixelated' : 'auto' }} />
@@ -451,7 +458,7 @@ export default function App() {
                   ) : (
                     <div
                       ref={sliderRef}
-                      className="relative w-full aspect-square max-h-[700px] overflow-hidden select-none bg-black cursor-col-resize mx-auto"
+                      className="relative w-full aspect-square max-h-[450px] overflow-hidden select-none bg-black cursor-col-resize mx-auto"
                       style={{ touchAction: 'none' }}
                       onPointerDown={handleSliderPointerDown}
                       onPointerMove={handleSliderPointerMove}
@@ -586,106 +593,79 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* TELEMETRY METRICS */}
+            {/* TELEMETRY METRICS AND HEATMAP ROW */}
             {activeSample && (
-              <div className="xl:col-span-2 border border-gray-800 bg-black/40 p-5 rounded-sm">
-                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Activity size={12} className="text-mission-orange" /> VALIDATION TELEMETRY
-                </h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">AI PSNR</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-mono text-2xl text-mission-cyan">{formatVal(activeSample.psnr_ai, 2)}</span>
-                      <span className="text-[10px] text-gray-600 font-mono">dB</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">AI SSIM</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-mono text-2xl text-mission-cyan">{formatVal(activeSample.ssim_ai, 3)}</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">BICUBIC PSNR</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-mono text-2xl text-gray-300">{formatVal(activeSample.psnr_bicubic, 2)}</span>
-                      <span className="text-[10px] text-gray-600 font-mono">dB</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">BICUBIC SSIM</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-mono text-2xl text-gray-300">{formatVal(activeSample.ssim_bicubic, 3)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="flex items-center justify-between bg-mission-cyan/5 border border-mission-cyan/10 px-3 py-2">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-widest">PSNR IMPROVEMENT</span>
-                    <span className="font-mono text-sm text-mission-cyan">{calcImpr(activeSample.psnr_ai, activeSample.psnr_bicubic, 2)} dB</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-mission-cyan/5 border border-mission-cyan/10 px-3 py-2">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-widest">SSIM IMPROVEMENT</span>
-                    <span className="font-mono text-sm text-mission-cyan">{calcImpr(activeSample.ssim_ai, activeSample.ssim_bicubic, 3)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* PERFORMANCE CHART */}
-            {activeSample && (
-              <div className="xl:col-span-1 border border-gray-800 bg-black/40 p-5 rounded-sm flex flex-col">
-                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <BarChart3 size={12} className="text-gray-400" /> MODEL PERFORMANCE // AI VS BICUBIC
-                </h3>
-                
-                <div className="flex-1 flex flex-col gap-5 justify-center font-mono text-xs">
-                  {/* PSNR */}
-                  <div>
-                    <div className="text-[10px] text-gray-500 mb-2 uppercase">PSNR (dB)</div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 text-right text-mission-cyan">AI</div>
-                        <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
-                          <div className="h-full bg-mission-cyan" style={{ width: `${(parseFloat(activeSample.psnr_ai||0) / maxChartPsnr) * 100}%` }}></div>
+              <>
+                <div className="xl:col-span-1 flex flex-col gap-6">
+                  {/* VALIDATION TELEMETRY */}
+                  <div className="border border-gray-800 bg-black/40 p-5 rounded-sm flex-1">
+                    <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Activity size={12} className="text-mission-orange" /> AI VALIDATION METRICS
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">AI PSNR</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-mono text-2xl text-mission-cyan">{formatVal(activeSample.psnr_ai, 2)}</span>
+                          <span className="text-[10px] text-gray-600 font-mono">dB</span>
                         </div>
-                        <div className="w-12 text-mission-cyan">{formatVal(activeSample.psnr_ai, 2)}</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 text-right text-gray-400">BC</div>
-                        <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
-                          <div className="h-full bg-gray-600" style={{ width: `${(parseFloat(activeSample.psnr_bicubic||0) / maxChartPsnr) * 100}%` }}></div>
+                      <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">AI SSIM</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-mono text-2xl text-mission-cyan">{formatVal(activeSample.ssim_ai, 3)}</span>
                         </div>
-                        <div className="w-12 text-gray-400">{formatVal(activeSample.psnr_bicubic, 2)}</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* SSIM */}
-                  <div>
-                    <div className="text-[10px] text-gray-500 mb-2 uppercase">SSIM (Index)</div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 text-right text-mission-cyan">AI</div>
-                        <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
-                          <div className="h-full bg-mission-cyan" style={{ width: `${(parseFloat(activeSample.ssim_ai||0) / maxChartSsim) * 100}%` }}></div>
+                  {/* AI MODEL PERFORMANCE CHART */}
+                  <div className="border border-gray-800 bg-black/40 p-5 rounded-sm flex-1 flex flex-col">
+                    <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <BarChart3 size={12} className="text-gray-400" /> AI MODEL PERFORMANCE
+                    </h3>
+                    
+                    <div className="flex-1 flex flex-col gap-5 justify-center font-mono text-xs">
+                      {/* PSNR */}
+                      <div>
+                        <div className="text-[10px] text-gray-500 mb-2 uppercase">PSNR (dB)</div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 text-right text-mission-cyan">AI</div>
+                            <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
+                              <div className="h-full bg-mission-cyan" style={{ width: `${(parseFloat(activeSample.psnr_ai||0) / maxChartPsnr) * 100}%` }}></div>
+                            </div>
+                            <div className="w-12 text-mission-cyan">{formatVal(activeSample.psnr_ai, 2)}</div>
+                          </div>
                         </div>
-                        <div className="w-12 text-mission-cyan">{formatVal(activeSample.ssim_ai, 3)}</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 text-right text-gray-400">BC</div>
-                        <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
-                          <div className="h-full bg-gray-600" style={{ width: `${(parseFloat(activeSample.ssim_bicubic||0) / maxChartSsim) * 100}%` }}></div>
+
+                      {/* SSIM */}
+                      <div>
+                        <div className="text-[10px] text-gray-500 mb-2 uppercase">SSIM (Index)</div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 text-right text-mission-cyan">AI</div>
+                            <div className="flex-1 h-3 bg-gray-900 border border-gray-800">
+                              <div className="h-full bg-mission-cyan" style={{ width: `${(parseFloat(activeSample.ssim_ai||0) / maxChartSsim) * 100}%` }}></div>
+                            </div>
+                            <div className="w-12 text-mission-cyan">{formatVal(activeSample.ssim_ai, 3)}</div>
+                          </div>
                         </div>
-                        <div className="w-12 text-gray-400">{formatVal(activeSample.ssim_bicubic, 3)}</div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+
+                {/* ERROR HEATMAP PANEL */}
+                <div className="xl:col-span-2">
+                  <ErrorHeatmap 
+                    aiSrc={getImageSrc(activeSample, 'output')} 
+                    refSrc={getImageSrc(activeSample, 'reference')} 
+                  />
+                </div>
+              </>
             )}
           </div>
 

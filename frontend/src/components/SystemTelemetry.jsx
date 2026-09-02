@@ -11,18 +11,6 @@ export default function SystemTelemetry({ activeSample, children }) {
 
   return (
     <section className="border border-gray-800 bg-black/40 rounded-sm p-6 relative overflow-hidden mb-8">
-      {/* Scanline Animation */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-mission-cyan/30 animate-[scan_4s_linear_infinite] pointer-events-none z-50"></div>
-      
-      <style>{`
-        @keyframes scan {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-      `}</style>
-
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-gray-800 pb-4 gap-4">
         <h2 className="text-sm font-mono font-bold text-mission-orange flex items-center gap-2 uppercase tracking-widest">
           <Terminal size={18} />
