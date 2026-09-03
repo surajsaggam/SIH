@@ -48,7 +48,7 @@ export default function GlobeHero({ onLaunchAnalysis, onViewFleet }) {
         </h1>
         
         <p className="text-gray-400 max-w-xl text-sm leading-relaxed">
-          AI-Powered Satellite Imagery Enhancement. Enhance resolution, detect patterns, and monitor change with 10cm precision.
+          AI-Powered Satellite Imagery Enhancement. Enhance resolution, detect patterns, and monitor change with 10m precision.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
@@ -70,16 +70,12 @@ export default function GlobeHero({ onLaunchAnalysis, onViewFleet }) {
         
         <div className="mt-8 flex gap-8 border-t border-gray-800 pt-6">
           <div>
-            <div className="font-mono text-2xl font-bold text-gray-200">10cm</div>
+            <div className="font-mono text-2xl font-bold text-gray-200">10m</div>
             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Max Resolution</div>
           </div>
           <div>
-            <div className="font-mono text-2xl font-bold text-gray-200">99.9%</div>
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Uptime</div>
-          </div>
-          <div>
-            <div className="font-mono text-2xl font-bold text-gray-200">&lt;12ms</div>
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Latency</div>
+            <div className="font-mono text-2xl font-bold text-gray-200">4x</div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Upscaling</div>
           </div>
         </div>
       </div>
