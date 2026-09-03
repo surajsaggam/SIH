@@ -23,9 +23,7 @@ export default function SystemTelemetry({ activeSample, children }) {
           <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
             SSIM: <span className="text-mission-cyan ml-1 font-bold">{formatVal(activeSample.ssim_ai, 3)}</span>
           </div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
-            LATENCY: <span className="text-mission-cyan ml-1 font-bold">12ms</span>
-          </div>
+
         </div>
       </div>
 
