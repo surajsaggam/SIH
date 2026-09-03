@@ -569,7 +569,7 @@ export default function App() {
             {[
               { num: '01', title: 'INPUT', desc: 'Sentinel-2 / 10m', active: true },
               { num: '02', title: 'PREPROCESS', desc: 'Cloud Mask / Tiling', active: true },
-              { num: '03', title: 'AI SUPER-RESOLUTION', desc: 'Real-ESRGAN / 4×', active: true },
+              { num: '03', title: 'AI SUPER-RESOLUTION', desc: 'Swin-IR / 4×', active: true },
               { num: '04', title: 'VALIDATION', desc: 'VENµS Reference', active: true },
               { num: '05', title: 'METRICS', desc: 'PSNR / SSIM', active: true },
             ].map((step, idx, arr) => (
