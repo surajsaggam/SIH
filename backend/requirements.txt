@@ -6,4 +6,7 @@ torch
 torchvision
 timm
 numpy
+transformers
+requests
+python-dotenv
 

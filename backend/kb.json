@@ -1,0 +1,162 @@
+{
+  "AnnualCrop": {
+    "icon": "Sprout",
+    "display_name": "Annual Crop",
+    "crop_analysis": [
+      "Optimal for seasonal cereal and legume rotation (e.g., wheat, maize, pulses).",
+      "Monitor canopy closure and localized chlorophyll levels to detect nitrogen deficiency.",
+      "Calibrate precision irrigation schedules based on temporal NDVI variations.",
+      "Track multi-temporal boundary changes to evaluate planting density and harvest progress."
+    ],
+    "disaster_management": [
+      "High vulnerability to sudden waterlogging and flash floods during early vegetative stages.",
+      "Establish perimeter drainage channels to mitigate seasonal monsoon overflow.",
+      "Monitor satellite thermal and moisture indices for early drought stress alerts.",
+      "Assess post-storm crop lodging and soil siltation extent using difference index mapping."
+    ]
+  },
+  "PermanentCrop": {
+    "icon": "TreePine",
+    "display_name": "Permanent Crop / Orchard",
+    "crop_analysis": [
+      "Suited for perennial orchards, vineyards, fruit groves, and agro-forestry plantations.",
+      "Track perennial canopy vigor and crown spacing over multi-year cycles.",
+      "Identify micro-scale irrigation line blockages through localized canopy thermal anomalies.",
+      "Plan targeted pruning and disease mitigation around localized foliage thinning."
+    ],
+    "disaster_management": [
+      "Moderate vulnerability to prolonged drought due to deep root structure, but susceptible to blossom frost.",
+      "Maintain active windbreaks to protect mature tree canopies from storm deflection.",
+      "Establish terraced contouring to prevent root exposure and soil erosion during heavy deluges.",
+      "Deploy localized frost warning triggers using elevation and nighttime surface temperature data."
+    ]
+  },
+  "Pasture": {
+    "icon": "Tractor",
+    "display_name": "Pasture / Grassland",
+    "crop_analysis": [
+      "Favorable for rotational livestock grazing and sustainable forage harvesting.",
+      "Calculate dry matter biomass density to prevent pasture overgrazing.",
+      "Identify weed and unpalatable shrub encroachment across open grassland sectors.",
+      "Evaluate seasonal green-up and senescence curves for optimal herd movement planning."
+    ],
+    "disaster_management": [
+      "High wildfire fuel load during dry winter/summer transitions with cured grass cover.",
+      "Establish plowed firebreaks along high-risk perimeter corridors.",
+      "Susceptible to rapid topsoil stripping and gully formation during unseasonal flash rains.",
+      "Monitor drought indices to trigger early fodder reserves before severe grassland desiccation."
+    ]
+  },
+  "HerbaceousVegetation": {
+    "icon": "Feather",
+    "display_name": "Herbaceous Vegetation",
+    "crop_analysis": [
+      "Serves as vital ecological buffer and native pollinator corridor adjacent to croplands.",
+      "Assess soil organic baseline before considering reclamation or specialized cultivation.",
+      "Maintain native grass species to sustain regional biodiversity and natural pest predators.",
+      "Evaluate marginal biomass yield for sustainable biofuel or organic mulch collection."
+    ],
+    "disaster_management": [
+      "Acts as a natural flash flood sponge, dissipating surface runoff velocity across slopes.",
+      "Extreme rapid fire spread hazard when seasonal grasses cure and dry under windy conditions.",
+      "Monitor moisture stress to forecast localized rangeland wildfire ignition risks.",
+      "Protect riparian herbaceous strips from vehicular degradation to prevent bank destabilization."
+    ]
+  },
+  "Forest": {
+    "icon": "Trees",
+    "display_name": "Forest Canopy",
+    "crop_analysis": [
+      "Provides critical microclimate buffering, humidity retention, and wind attenuation for surrounding farms.",
+      "Assess tree density and canopy closure metrics for carbon sequestration tracking.",
+      "Identify potential shade-tolerant agroforestry integrations (e.g., medicinal herbs, cocoa, coffee).",
+      "Monitor boundary perimeters to detect illegal clearing or deforestation incursions."
+    ],
+    "disaster_management": [
+      "Critical terrain stabilizer against catastrophic landslides and slope failure on steep gradients.",
+      "High crown fire risk during prolonged drought; maintain strategic fuel breaks and access roads.",
+      "Intercepts extreme rainfall to substantially lower downstream watershed peak flood surges.",
+      "Deploy high-frequency thermal anomaly checks for rapid forest fire ignition detection."
+    ]
+  },
+  "River": {
+    "icon": "Waves",
+    "display_name": "River / Waterway",
+    "crop_analysis": [
+      "Primary freshwater source for regional canal networks and gravitational irrigation.",
+      "Monitor siltation and suspended sediment plumes to gauge upstream agricultural soil erosion.",
+      "Establish protective riparian buffer strips to capture fertilizer and pesticide runoff.",
+      "Analyze seasonal riverbed shifts to ensure permanent intake pumping stations remain submerged."
+    ],
+    "disaster_management": [
+      "Primary vector for monsoon flood surges, embankment breaches, and rapid inundation.",
+      "Conduct regular cross-sectional satellite profiling to locate sandbar obstructions.",
+      "Simulate 50-year flood plain extent to enforce zero-construction safety buffers.",
+      "Monitor upstream catchment rainfall telemetry to generate 6-12 hour evacuation warnings."
+    ]
+  },
+  "SeaLake": {
+    "icon": "Droplets",
+    "display_name": "Sea / Open Water / Lake",
+    "crop_analysis": [
+      "Supports brackish aquaculture, reservoir storage, and regional microclimate stabilization.",
+      "Monitor coastal salinity gradients to protect nearby groundwater wells from saltwater intrusion.",
+      "Detect surface algal blooms and eutrophication indicators driven by agricultural nitrogen runoff.",
+      "Evaluate seasonal evaporation rates to optimize regional reservoir conservation quotas."
+    ],
+    "disaster_management": [
+      "Vulnerable to coastal storm surges, extreme cyclone tides, and shoreline erosion.",
+      "Implement seawall and mangrove preservation zones to attenuate incoming wave energy.",
+      "Monitor sudden water level drops or seismic triggers for tsunami/surge alert readiness.",
+      "Track coastal inundation contours to protect low-lying community infrastructure."
+    ]
+  },
+  "Highway": {
+    "icon": "Route",
+    "display_name": "Highway / Road Network",
+    "crop_analysis": [
+      "Critical logistical transport corridor linking farm harvests to wholesale distribution centers.",
+      "Assess transit accessibility to determine perishable crop market viability.",
+      "Monitor roadside air particulate accumulation on adjacent sensitive crop canopies.",
+      "Identify optimal consolidation hubs for cold-chain storage and grain transport logistics."
+    ],
+    "disaster_management": [
+      "Primary lifeline for emergency evacuation and disaster relief distribution during regional crises.",
+      "Survey culverts, embankments, and overpasses for flood overtopping and structural scour.",
+      "Prioritize rapid satellite damage surveys after seismic events to detect roadway fissures.",
+      "Maintain alternate detour routing strategies for flood-prone transit segments."
+    ]
+  },
+  "Industrial": {
+    "icon": "Factory",
+    "display_name": "Industrial Area",
+    "crop_analysis": [
+      "Establish environmental safety buffers to isolate food crops from heavy industrial operations.",
+      "Monitor industrial runoff points to verify zero untreated effluent discharge into farm waterways.",
+      "Assess potential for repurposing captured industrial thermal energy for greenhouse heating.",
+      "Test surrounding soil samples for heavy metal contamination before food-grade cultivation."
+    ],
+    "disaster_management": [
+      "High concentration of hazardous chemicals, fuel storage, and industrial fire vulnerability.",
+      "High percentage of impervious surfaces triggers severe localized flash runoff during downpours.",
+      "Ensure containment berms around hazardous tanks are structurally verified against flood waters.",
+      "Maintain active toxic fume plume dispersion modeling for adjacent populated zones."
+    ]
+  },
+  "Residential": {
+    "icon": "Building",
+    "display_name": "Residential / Urban Settlement",
+    "crop_analysis": [
+      "High potential for urban agriculture, vertical hydroponics, and community rooftop gardens.",
+      "Manage peri-urban sprawl to prevent loss of fertile grade-A arable land.",
+      "Incentivize local composting of municipal organic waste for agricultural soil amendment.",
+      "Address groundwater table competition between domestic residential borewells and irrigation."
+    ],
+    "disaster_management": [
+      "High human life vulnerability during extreme weather and seismic events.",
+      "Urban heat island (UHI) mitigation required through green corridors and reflective roofs.",
+      "Severe urban flash flooding risk due to storm drain bottlenecks and paved surfaces.",
+      "Ensure clear, unobstructed secondary evacuation corridors out of dense settlements."
+    ]
+  }
+}

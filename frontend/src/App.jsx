@@ -3,6 +3,7 @@ import { Activity, ChevronRight, CheckCircle2, Maximize, BarChart3, Database, Up
 import GlobeHero from './components/GlobeHero';
 import SystemTelemetry from './components/SystemTelemetry';
 import ErrorHeatmap from './components/ErrorHeatmap';
+import LandCoverAnalysis from './components/LandCoverAnalysis';
 
 export default function App() {
   const [samples, setSamples] = useState([]);
@@ -14,6 +15,8 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [analysisMap, setAnalysisMap] = useState({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const sliderRef = useRef(null);
   const analysisRef = useRef(null);
   const satelliteRef = useRef(null);
@@ -101,6 +104,32 @@ export default function App() {
 
       setCustomSample(newCustomSample);
       setActiveSampleId('custom');
+
+      // Trigger Land Cover Analysis for newly enhanced custom image
+      try {
+        setIsAnalyzing(true);
+        const binaryStr = atob(data.image);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'image/png' });
+        const analyzeFd = new FormData();
+        analyzeFd.append('file', blob, 'enhanced_custom.png');
+
+        const analyzeRes = await fetch('http://127.0.0.1:8000/analyze', {
+          method: 'POST',
+          body: analyzeFd,
+        });
+        if (analyzeRes.ok) {
+          const aData = await analyzeRes.json();
+          setAnalysisMap(prev => ({ ...prev, custom: aData }));
+        }
+      } catch (analyzeErr) {
+        console.error("Land cover analysis error:", analyzeErr);
+      } finally {
+        setIsAnalyzing(false);
+      }
     } catch (err) {
       console.error("Upload error caught in catch:", err);
       setUploadError(err.message || 'Failed to process image with SwinIR backend.');
@@ -131,6 +160,44 @@ export default function App() {
     if (type === 'reference') return `/${sample.sample_id}_reference.png`;
     return '';
   };
+
+  // Preload/fetch Land Cover Analysis for preset scenes
+  useEffect(() => {
+    if (!activeSampleId || activeSampleId === 'custom') return;
+    if (analysisMap[activeSampleId]) return;
+
+    const currentSample = samples.find(s => s.sample_id === activeSampleId);
+    const outputSrc = getImageSrc(currentSample, 'output');
+    if (!outputSrc) return;
+
+    let isMounted = true;
+    setIsAnalyzing(true);
+
+    fetch(outputSrc)
+      .then(r => r.blob())
+      .then(blob => {
+        const fd = new FormData();
+        fd.append('file', blob, `${activeSampleId}_output.png`);
+        return fetch('http://127.0.0.1:8000/analyze', {
+          method: 'POST',
+          body: fd,
+        });
+      })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (isMounted && data) {
+          setAnalysisMap(prev => ({ ...prev, [activeSampleId]: data }));
+        }
+      })
+      .catch(err => console.error("Error analyzing sample:", err))
+      .finally(() => {
+        if (isMounted) setIsAnalyzing(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSampleId, samples]);
 
   const handleDownload = () => {
     const outputSrc = getImageSrc(activeSample, 'output');
@@ -681,19 +748,12 @@ export default function App() {
                   </div>
                   <CheckCircle2 size={16} className="text-mission-cyan" />
                 </div>
-                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                <div className="flex items-center justify-between pb-1">
                   <div className="flex flex-col">
                     <span className="text-xs text-gray-300">STRUCTURAL SIMILARITY</span>
                     <span className="text-[10px] font-mono text-gray-500">SSIM</span>
                   </div>
                   <CheckCircle2 size={16} className="text-mission-cyan" />
-                </div>
-                <div className="flex items-center justify-between pb-1">
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-400">SPECTRAL CONSISTENCY</span>
-                    <span className="text-[10px] font-mono text-gray-500">SAM</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-mission-orange bg-mission-orange/10 px-2 py-0.5 border border-mission-orange/20">Not available in current benchmark</span>
                 </div>
               </div>
             </div>
@@ -720,6 +780,12 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* LAND COVER ANALYSIS // STEP 06 */}
+          <LandCoverAnalysis 
+            analysis={analysisMap[activeSampleId]} 
+            isAnalyzing={isAnalyzing && !analysisMap[activeSampleId]} 
+          />
 
           {/* APPLICATION MODULES */}
           <div className="border border-gray-800 bg-black/40 p-5 rounded-sm mb-8">

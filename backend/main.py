@@ -25,8 +25,13 @@ os.makedirs(OUTPUTS_DIR, exist_ok=True)
 if SWINIR_DIR not in sys.path:
     sys.path.insert(0, SWINIR_DIR)
 
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+
 from model_loader import load_swinir_model
 from inference import super_resolve
+from analysis import analyze, get_classifier
+from chat import chat as run_chat
 
 # Global model references
 swinir_model = None
@@ -39,6 +44,14 @@ async def lifespan(app: FastAPI):
     checkpoint_path = os.path.join(SWINIR_DIR, "deployment_model", "swinir_sentinel2_x4.pth")
     swinir_model, model_device = load_swinir_model(model_path=checkpoint_path)
     print(f"SwinIR model loaded successfully on device: {model_device}")
+
+    print("Pre-loading Land Cover Classifier (EuroSAT ConvNeXt)...")
+    try:
+        get_classifier()
+        print("EuroSAT classifier pre-loaded successfully.")
+    except Exception as e:
+        print(f"[WARNING] EuroSAT classifier pre-load failed (will retry on first /analyze request): {e}")
+
     yield
 
 app = FastAPI(title="SIH PS 26142 - Super Resolution API", lifespan=lifespan)
@@ -179,6 +192,43 @@ def read_root():
     return {
         "status": "Active",
         "model": "SwinIR Sentinel-2 4x Super-Resolution",
-        "device": str(model_device) if model_device else "Pending initialization"
+        "device": str(model_device) if model_device else "Pending initialization",
+        "land_cover_agent": "EuroSAT ConvNeXt-Tiny Active"
     }
+
+@app.post("/analyze")
+async def analyze_route(file: UploadFile = File(...)):
+    print(f"[ANALYZE] Received image file: {file.filename}")
+    try:
+        contents = await file.read()
+        try:
+            pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
+        except Exception as img_err:
+            print(f"[ERROR] Upload is not a valid image: {img_err}")
+            raise HTTPException(status_code=400, detail="Invalid image file format for analysis.")
+
+        result = analyze(pil_image)
+        print(f"[ANALYZE] Result: {result.get('label')} ({result.get('confidence')}%)")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Land cover analysis failed: {str(e)}")
+
+class ChatRequest(BaseModel):
+    session_id: Optional[str] = "default"
+    question: str
+    analysis: Optional[Dict[str, Any]] = None
+
+@app.post("/chat")
+async def chat_route(payload: ChatRequest):
+    print(f"[CHAT] Received question: '{payload.question[:60]}' for session: {payload.session_id}")
+    try:
+        answer = run_chat(payload.session_id, payload.question, payload.analysis)
+        return {"answer": answer}
+    except Exception as e:
+        print(f"[ERROR] Chat failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat inference failed: {str(e)}")
+
 
