@@ -13,7 +13,7 @@ CEREBRAS_MODEL = os.environ.get("CEREBRAS_MODEL", "gpt-oss-120b")
 
 # Groq configuration (switchable via LLM_PROVIDER=groq)
 GROQ_URL = os.environ.get("GROQ_URL", "https://api.groq.com/openai/v1/chat/completions")
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
 # Session history store: session_id -> deque of recent message dicts (max 8 messages)
 sessions: Dict[str, deque] = {}
