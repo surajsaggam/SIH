@@ -72,8 +72,6 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
         const normalized = pixelErr / 255.0;
         const curved = Math.pow(normalized, 0.5); // Gamma 0.5
 
-        // Yellow for low error, Red for high error
-        // Yellow: [255, 255, 0], Red: [255, 0, 0]
         let r = 255;
         let g = 255 * (1 - curved);
         let b = 0;
@@ -81,7 +79,7 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
         heatmapData[i] = r;
         heatmapData[i + 1] = g;
         heatmapData[i + 2] = b;
-        heatmapData[i + 3] = 255; // Alpha
+        heatmapData[i + 3] = 255;
       }
 
       if (isMounted) {
@@ -106,76 +104,97 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
 
   if (!refSrc) {
     return (
-      <div className="border border-gray-800 bg-black/40 p-5 rounded-sm flex flex-col h-full min-h-[300px]">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <Activity size={12} className="text-mission-orange" /> RECONSTRUCTION ERROR VS GROUND TRUTH
-        </h3>
-        <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-gray-700 rounded-sm bg-black/50 p-6 text-center h-full">
+      <div className="cosmic-panel p-5 rounded-xl border border-white/[0.08] bg-[#080D18]/80 flex flex-col h-full min-h-[260px] justify-between">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+          <h3 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            <Activity size={12} className="text-orange-400" />
+            <span>RECONSTRUCTION ERROR // PIXEL HEATMAP</span>
+          </h3>
+          <span className="text-[9px] font-mono text-gray-500 uppercase">GROUND TRUTH</span>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-lg bg-black/40 p-6 text-center my-3">
           <AlertTriangle size={24} className="text-gray-600 mb-2" />
-          <div className="text-xs font-bold text-gray-400 mb-1">DATA UNAVAILABLE</div>
-          <div className="text-[10px] font-mono text-gray-500 max-w-[200px]">
-            No ground truth reference available for live uploads to compute MAE.
-          </div>
+          <div className="text-xs font-mono font-bold text-gray-300 mb-1 uppercase tracking-wider">REFERENCE NOT ATTACHED</div>
+          <p className="text-[10px] font-mono text-gray-500 max-w-[260px] leading-relaxed">
+            Ground-truth VENµS high-resolution reference is unavailable for live inference uploads. PSNR/MAE computation requires paired ground truth.
+          </p>
+        </div>
+
+        <div className="text-[9px] font-mono text-gray-600 flex items-center gap-1.5 pt-2 border-t border-white/[0.06]">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+          <span>Scientific integrity preserved (no synthetic metrics generated)</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-800 bg-black/40 p-5 rounded-sm flex flex-col h-full">
-      <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <Activity size={12} className="text-mission-orange" /> RECONSTRUCTION ERROR VS GROUND TRUTH
-      </h3>
+    <div className="cosmic-panel p-5 rounded-xl border border-white/[0.08] bg-[#080D18]/80 flex flex-col h-full">
+      <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.06]">
+        <h3 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+          <Activity size={12} className="text-orange-400" />
+          <span>RECONSTRUCTION ERROR // GROUND TRUTH COMPARISON</span>
+        </h3>
+        <span className="text-[9px] font-mono text-cyan-400 font-semibold px-2 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/20">
+          VENµS PAIRED
+        </span>
+      </div>
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col justify-between">
         <div className="flex gap-4 mb-4">
           {/* Heatmap Canvas Container */}
-          <div className="flex-1 relative border border-gray-800 bg-black overflow-hidden flex items-center justify-center h-[200px]">
+          <div className="flex-1 relative border border-white/10 rounded-lg bg-black overflow-hidden flex items-center justify-center min-h-[180px] max-h-[220px]">
             {isComputing && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-                <span className="text-[10px] font-mono text-mission-cyan animate-pulse">COMPUTING ERROR MAP...</span>
+                <span className="text-[10px] font-mono text-cyan-400 animate-pulse">COMPUTING PIXEL ERROR MAP...</span>
               </div>
             )}
-            <canvas ref={canvasRef} className="max-w-full max-h-[200px] object-contain w-full h-auto" />
-            <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-[9px] font-mono text-gray-400 border border-gray-700 backdrop-blur-sm pointer-events-none">
-              PIXEL ERROR MAGNITUDE
+            <canvas ref={canvasRef} className="max-w-full max-h-[220px] object-contain w-full h-auto" />
+            <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-[9px] font-mono text-gray-400 border border-white/10 rounded-xs backdrop-blur-sm pointer-events-none">
+              PIXEL ERROR RESIDUAL
             </div>
           </div>
           
           {/* Color Scale Bar */}
-          <div className="w-6 flex flex-col border border-gray-800">
+          <div className="w-5 flex flex-col border border-white/10 rounded-sm overflow-hidden">
             <div 
               className="flex-1 w-full"
               style={{
                 background: 'linear-gradient(to bottom, #FF0000 0%, #FFFF00 100%)'
               }}
-            ></div>
+            />
           </div>
           <div className="flex flex-col justify-between text-[9px] font-mono text-gray-500 py-1">
-            <span>HIGH</span>
-            <span>ERROR</span>
-            <div className="flex-1"></div>
-            <span>LOW</span>
-            <span>ERROR</span>
+            <span className="text-red-400 font-bold">MAX</span>
+            <span className="text-yellow-400 font-semibold">MID</span>
+            <span className="text-gray-400">MIN</span>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mt-auto">
-          <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">MEAN ABSOLUTE ERROR</span>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 mt-auto">
+          <div className="bg-black/40 border border-white/[0.08] p-3 rounded-lg flex flex-col justify-center">
+            <span className="text-[9px] font-mono text-gray-500 font-bold uppercase tracking-widest mb-1">
+              MEAN ABSOLUTE ERROR (MAE)
+            </span>
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-xl text-mission-orange">
+              <span className="font-mono text-2xl font-bold text-orange-400">
                 {mae !== null ? mae.toFixed(2) : '--'}
               </span>
+              <span className="text-[10px] font-mono text-gray-500">px</span>
             </div>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800 p-3 flex flex-col justify-center">
-            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">MAXIMUM ERROR</span>
+
+          <div className="bg-black/40 border border-white/[0.08] p-3 rounded-lg flex flex-col justify-center">
+            <span className="text-[9px] font-mono text-gray-500 font-bold uppercase tracking-widest mb-1">
+              MAXIMUM ERROR
+            </span>
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-xl text-red-500">
+              <span className="font-mono text-2xl font-bold text-red-400">
                 {maxError !== null ? maxError.toFixed(1) : '--'}
               </span>
+              <span className="text-[10px] font-mono text-gray-500">px</span>
             </div>
           </div>
         </div>

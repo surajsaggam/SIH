@@ -1,7 +1,7 @@
 import React from 'react';
-import { Terminal } from 'lucide-react';
+import { Terminal, Cpu, Radio, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
-export default function SystemTelemetry({ activeSample, children }) {
+export default function SystemTelemetry({ activeSample, isUploading, isAnalyzing }) {
   if (!activeSample) return null;
 
   const formatVal = (val, decimals) => {
@@ -9,67 +9,117 @@ export default function SystemTelemetry({ activeSample, children }) {
     return parseFloat(val).toFixed(decimals);
   };
 
+  const sampleTitle = activeSample.name || activeSample.sample_id || 'Sentinel-2';
+
   return (
-    <section className="border border-gray-800 bg-black/40 rounded-sm p-6 relative overflow-hidden mb-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-gray-800 pb-4 gap-4">
-        <h2 className="text-sm font-mono font-bold text-mission-orange flex items-center gap-2 uppercase tracking-widest">
-          <Terminal size={18} />
-          SYSTEM_TELEMETRY // LIVE_FEED
-        </h2>
-        <div className="flex flex-wrap gap-4 md:gap-6">
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
-            PSNR: <span className="text-mission-cyan ml-1 font-bold">{formatVal(activeSample.psnr_ai, 2)}dB</span>
+    <div className="flex flex-col gap-4">
+      {/* Telemetry Header */}
+      <div className="cosmic-panel p-4 rounded-xl border border-cyan-500/20 bg-[#080D18]/90">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2 text-cyan-400">
+            <Radio size={14} className="animate-pulse" />
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase">
+              LIVE TELEMETRY
+            </span>
           </div>
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
-            SSIM: <span className="text-mission-cyan ml-1 font-bold">{formatVal(activeSample.ssim_ai, 3)}</span>
-          </div>
+          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 font-semibold">
+            FEED ACTIVE
+          </span>
+        </div>
 
+        {/* Core Specs Grid */}
+        <div className="grid grid-cols-2 gap-3 pt-3 text-[11px] font-mono">
+          <div>
+            <span className="text-[9px] text-gray-500 uppercase block">MODEL</span>
+            <span className="text-gray-200 font-semibold">SwinIR x4</span>
+          </div>
+          <div>
+            <span className="text-[9px] text-gray-500 uppercase block">SCALE</span>
+            <span className="text-cyan-400 font-bold">4× Spatial</span>
+          </div>
+          <div>
+            <span className="text-[9px] text-gray-500 uppercase block">INPUT RES</span>
+            <span className="text-gray-300">10 m / px</span>
+          </div>
+          <div>
+            <span className="text-[9px] text-gray-500 uppercase block">OUTPUT RES</span>
+            <span className="text-orange-400 font-semibold">&lt; 4 m / px</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Data Readouts Sidebar */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="border border-gray-800 bg-gray-900/50 p-4 rounded-sm">
-            <div className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest mb-2">Sensor Array Alpha</div>
-            <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-mission-orange h-full w-[85%]"></div>
-            </div>
-            <div className="mt-2 text-[10px] font-mono text-right text-mission-orange font-bold uppercase tracking-widest">85% OPTIMAL</div>
+      {/* Sensor Array & Neural Net */}
+      <div className="cosmic-panel p-4 rounded-xl border border-white/[0.08] bg-[#080D18]/80 flex flex-col gap-3">
+        <div>
+          <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 mb-1.5">
+            <span className="uppercase tracking-wider">SENSOR ARRAY ALPHA</span>
+            <span className="text-cyan-400 font-bold">94% OPTIMAL</span>
           </div>
-          
-          <div className="border border-gray-800 bg-gray-900/50 p-4 rounded-sm">
-            <div className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest mb-2">Neural Net Processing</div>
-            <div className="flex justify-between items-end">
-              <div className="flex gap-1 h-8 items-end">
-                <div className="w-1.5 bg-mission-cyan h-[40%] animate-[pulse_1s_ease-in-out_infinite]"></div>
-                <div className="w-1.5 bg-mission-cyan h-[70%] animate-[pulse_1.2s_ease-in-out_infinite]"></div>
-                <div className="w-1.5 bg-mission-cyan h-[90%] animate-[pulse_0.8s_ease-in-out_infinite]"></div>
-                <div className="w-1.5 bg-mission-cyan h-[50%] animate-[pulse_1.5s_ease-in-out_infinite]"></div>
-                <div className="w-1.5 bg-mission-cyan h-[80%] animate-[pulse_1.1s_ease-in-out_infinite]"></div>
-              </div>
-              <div className="text-[10px] font-mono text-mission-cyan font-bold tracking-widest uppercase">ACTIVE</div>
-            </div>
-          </div>
-          
-          <div className="border border-gray-800 bg-gray-900/50 p-4 rounded-sm flex-grow">
-            <div className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest mb-2">Mission Log</div>
-            <ul className="text-[10px] font-mono text-gray-500 space-y-2 opacity-80">
-              <li>&gt; Target: {activeSample.name}</li>
-              <li>&gt; Initiating scan sequence...</li>
-              <li>&gt; Calibrating optics...</li>
-              <li className="text-mission-orange font-bold">&gt; Enhancing resolution (4x)...</li>
-              <li>&gt; Noise reduction applied.</li>
-              <li className="text-mission-cyan">&gt; Validation complete.</li>
-            </ul>
+          <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/10">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-[94%]" />
           </div>
         </div>
-        
-        {/* Comparison Slider Main Area */}
-        <div className="lg:col-span-3">
-          {children}
+
+        <div className="pt-2 border-t border-white/[0.06]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Cpu size={12} className="text-cyan-400" />
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">NEURAL NET INFERENCE</span>
+            </div>
+            <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${isUploading || isAnalyzing ? 'text-orange-400 animate-pulse' : 'text-cyan-400'}`}>
+              {isUploading ? 'UPSCALING...' : isAnalyzing ? 'CLASSIFYING...' : 'ONLINE'}
+            </span>
+          </div>
+
+          {/* Equalizer Bars */}
+          <div className="flex items-end gap-1.5 h-6 bg-black/40 p-1.5 rounded-md border border-white/[0.06]">
+            {[40, 75, 100, 60, 85, 50, 90, 70].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 bg-gradient-to-t from-blue-500 to-cyan-400 rounded-xs transition-all duration-300"
+                style={{
+                  height: `${isUploading || isAnalyzing ? Math.min(100, (h + (i % 3) * 15)) : h}%`,
+                  opacity: isUploading || isAnalyzing ? 1 : 0.75
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+
+      {/* Mission Log */}
+      <div className="cosmic-panel p-4 rounded-xl border border-white/[0.08] bg-[#080D18]/80 flex flex-col flex-1">
+        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-white/[0.06]">
+          <Terminal size={12} className="text-gray-400" />
+          <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">
+            MISSION LOG STREAM
+          </span>
+        </div>
+
+        <ul className="text-[10px] font-mono space-y-1.5 text-gray-400">
+          <li className="flex items-start gap-1.5">
+            <span className="text-cyan-500">&gt;</span>
+            <span className="text-gray-300 truncate">Target: {sampleTitle}</span>
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-cyan-500">&gt;</span>
+            <span>Sentinel-2 L2A composite loaded</span>
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-cyan-500">&gt;</span>
+            <span>Optics &amp; geometric calibration ready</span>
+          </li>
+          <li className="flex items-start gap-1.5 text-cyan-400 font-semibold">
+            <span className="text-cyan-400">&gt;</span>
+            <span>SwinIR 4× super-resolution active</span>
+          </li>
+          <li className="flex items-start gap-1.5 text-emerald-400">
+            <CheckCircle2 size={11} className="mt-0.5 text-emerald-400 flex-shrink-0" />
+            <span>Telemetry validated by SIH 2026</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
   );
 }
