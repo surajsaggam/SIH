@@ -69,7 +69,7 @@ export default function CinematicIntro({ onComplete }) {
       } else if (elapsed >= 1600 && elapsed < 2300) {
         setBootText('ENGAGING SWINIR ×4 SUPER-RESOLUTION ENGINE...');
       } else if (elapsed >= 2300) {
-        setBootText('SYSTEM ONLINE // WELCOME TO SRM-26142');
+        setBootText('SYSTEM ONLINE // SUPER RESOLUTION MAPPING READY');
       }
 
       // Trigger fade out at 2400ms
@@ -260,7 +260,7 @@ export default function CinematicIntro({ onComplete }) {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
           <span className="text-xs font-mono font-bold tracking-widest text-cyan-400 uppercase">
-            SRM-26142 // SATELLITE SYSTEM BOOT
+            SUPER RESOLUTION MAPPING // SATELLITE SYSTEM BOOT
           </span>
         </div>
 

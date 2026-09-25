@@ -21,7 +21,7 @@ export default function ChatBot({ analysis }) {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState('');
   const [requestError, setRequestError] = useState(null);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
 
   // Suggested prompt pills
@@ -53,9 +53,14 @@ export default function ChatBot({ analysis }) {
     ]);
   }, [analysis]);
 
-  // Scroll to bottom on new messages
+  // Scroll internal messages container to bottom only during active conversation (never scroll window)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 1 && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [messages, isLoading]);
 
   const handleResetSession = () => {
@@ -138,7 +143,7 @@ export default function ChatBot({ analysis }) {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50);
     }
   };
 
@@ -152,7 +157,7 @@ export default function ChatBot({ analysis }) {
   const handleQuickPrompt = (promptText) => {
     setInput(promptText);
     setTimeout(() => {
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }, 50);
   };
 
@@ -237,7 +242,10 @@ export default function ChatBot({ analysis }) {
       </div>
 
       {/* ── Messages Container ── */}
-      <div className="p-4 flex-1 flex flex-col gap-3 min-h-[220px] max-h-[360px] overflow-y-auto font-sans">
+      <div 
+        ref={messagesContainerRef}
+        className="p-4 flex-1 flex flex-col gap-3 min-h-[220px] max-h-[360px] overflow-y-auto font-sans"
+      >
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
           return (
@@ -289,8 +297,6 @@ export default function ChatBot({ analysis }) {
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* ── Quick Prompts ── */}

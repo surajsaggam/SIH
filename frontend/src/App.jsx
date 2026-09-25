@@ -23,10 +23,16 @@ import LandCoverAnalysis from './components/LandCoverAnalysis';
 import ChatBot from './components/ChatBot';
 import CinematicIntro from './components/CinematicIntro';
 
+const PRESET_SAMPLES = [
+  { sample_id: 'sample_1', name: 'Crop Monitoring', psnr_ai: '30.0', ssim_ai: '0.85', psnr_bicubic: '26.0', ssim_bicubic: '0.75' },
+  { sample_id: 'sample_2', name: 'Urban Area', psnr_ai: '31.5', ssim_ai: '0.89', psnr_bicubic: '27.2', ssim_bicubic: 'NaN' },
+  { sample_id: 'sample_3', name: 'Disaster Assessment', psnr_ai: '33.0', ssim_ai: '0.93', psnr_bicubic: '28.4', ssim_bicubic: '0.81' },
+];
+
 export default function App() {
   const [showIntro, setShowIntro] = useState(true);
-  const [samples, setSamples] = useState([]);
-  const [activeSampleId, setActiveSampleId] = useState(null);
+  const [samples, setSamples] = useState(PRESET_SAMPLES);
+  const [activeSampleId, setActiveSampleId] = useState('sample_1');
   const [viewMode, setViewMode] = useState('input_ai'); // input_ai, ai_ref, threeway
   const [sliderPosition, setSliderPosition] = useState(50);
   const [customSample, setCustomSample] = useState(null);
@@ -75,18 +81,18 @@ export default function App() {
     fetch('/results.csv')
       .then(res => res.text())
       .then(text => {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].split(',');
+        const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+        const headers = lines[0].split(',').map(h => h.trim());
         const data = lines.slice(1).map(line => {
-          const values = line.split(',');
+          const values = line.split(',').map(v => v.trim());
           return headers.reduce((obj, header, index) => {
             obj[header] = values[index];
             return obj;
           }, {});
         });
-        setSamples(data);
         if (data.length > 0) {
-          setActiveSampleId(data[0].sample_id);
+          setSamples(data);
+          setActiveSampleId(prev => prev || data[0].sample_id);
         }
       })
       .catch(err => console.error("Error loading CSV:", err));
@@ -298,54 +304,18 @@ export default function App() {
 
       {/* ── HEADER ── */}
       <header className="border-b border-white/[0.08] bg-[#05080E]/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-[1920px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1920px] mx-auto px-6 h-16 flex items-center">
           
-          {/* Brand & Mission Tag */}
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 p-[1px] flex items-center justify-center">
+          {/* Brand & Product Title */}
+          <div className="flex items-center gap-3.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 p-[1px] flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)]">
               <div className="w-full h-full bg-[#05080E] rounded-lg flex items-center justify-center">
                 <Sparkles size={16} className="text-cyan-400" />
               </div>
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-extrabold tracking-widest text-white uppercase font-sans">
-                  SRM-26142 <span className="text-cyan-400 opacity-60 mx-1">//</span> SUPER RESOLUTION MAPPING
-                </h1>
-              </div>
-              <div className="text-[10px] font-mono tracking-widest text-gray-400 flex items-center gap-1.5 mt-0.5">
-                <span>Sentinel-2</span>
-                <ChevronRight size={10} className="text-cyan-400" />
-                <span className="text-cyan-400 font-semibold">AI Super Resolution</span>
-                <ChevronRight size={10} className="text-cyan-400" />
-                <span>High-Res Validation</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Status Indicators */}
-          <div className="hidden lg:flex items-center gap-6 text-xs font-mono">
-            <div className="flex items-center gap-2 text-cyan-400 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/20">
-              <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
-              <span>MODEL: SwinIR x4</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-emerald-400 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
-              <span>STATUS: ACTIVE</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-gray-300">
-              <Maximize size={12} className="text-cyan-400" />
-              <span>SCALE: 4x</span>
-            </div>
-
-            <div className="h-5 w-px bg-white/10" />
-
-            <div className="flex flex-col items-end text-[10px] text-gray-400 leading-tight">
-              <span className="font-semibold text-white">MISSION: SIH 2026</span>
-              <span className="text-cyan-400 font-mono">LIVE INFERENCE</span>
-            </div>
+            <h1 className="text-sm sm:text-base font-extrabold tracking-widest text-white uppercase font-sans">
+              Pixel 2 Pulse
+            </h1>
           </div>
 
         </div>
@@ -954,7 +924,8 @@ export default function App() {
             <div className="lg:col-span-7">
               <ErrorHeatmap 
                 aiSrc={getImageSrc(activeSample, 'output')} 
-                refSrc={activeSample?.sample_id === 'custom' ? null : getImageSrc(activeSample, 'reference')} 
+                refSrc={getImageSrc(activeSample, 'reference')} 
+                isPairedReference={activeSample?.sample_id !== 'custom'}
               />
             </div>
 
@@ -1096,20 +1067,17 @@ export default function App() {
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-white/[0.08] bg-[#030509] py-8 px-6 text-xs font-mono text-gray-500">
-        <div className="max-w-[1920px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-white font-bold">SRM-26142</span>
-            <span>//</span>
-            <span>SMART INDIA HACKATHON 2026</span>
+      <footer className="border-t border-white/[0.08] bg-[#030509] py-6 px-6 text-xs font-mono text-gray-500">
+        <div className="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
+            <span className="text-white font-semibold tracking-wider uppercase text-xs">SUPER RESOLUTION MAPPING</span>
+            <span className="hidden sm:inline text-gray-700">|</span>
+            <span className="text-gray-400 text-[11px]">AI-powered Sentinel-2 image enhancement</span>
           </div>
-          <div className="flex items-center gap-6 text-[11px]">
-            <span>SwinIR Sentinel-2 Transformer</span>
-            <span>EuroSAT ConvNeXt-Tiny</span>
-            <span className="text-cyan-400">Cerebras RAG Inference</span>
-          </div>
-          <div className="text-gray-600 text-[10px]">
-            © 2026 SRM-26142. All rights reserved.
+          <div className="flex items-center gap-4 text-[11px] text-gray-500">
+            <span className="text-gray-500">Smart India Hackathon 2026</span>
+            <span className="text-gray-700">·</span>
+            <span className="text-gray-500">© 2026</span>
           </div>
         </div>
       </footer>

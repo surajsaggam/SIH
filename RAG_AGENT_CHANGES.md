@@ -193,12 +193,19 @@ git checkout srm-dashboard-rag-agent
    *(Note: The first time `analysis.py` runs, it will automatically download the lightweight `mrm8488/convnext-tiny-finetuned-eurosat` Hugging Face weights (~110MB).)*
 
 4. Configure the Environment Variables (see Section 6 for details):
-   Create a `.env` file in the `backend/` directory:
+   Copy `backend/.env.example` to `backend/.env`:
+   ```bash
+   cp backend/.env.example backend/.env
+   # Or on Windows PowerShell:
+   # Copy-Item backend/.env.example backend/.env
+   ```
+   Add your Groq API key:
    ```bash
    # Inside backend/.env
    LLM_PROVIDER=groq
-   GROQ_API_KEY=gsk_your_actual_groq_api_key_here
+   GROQ_API_KEY=your_groq_api_key_here
    ```
+   *(Note: Never commit or publicly share `backend/.env`)*
 
 5. Start the FastAPI backend server:
    ```bash
@@ -237,19 +244,21 @@ The RAG Agent uses an OpenAI-compatible REST pattern executed via Python `reques
 
 ### Configuration (`backend/.env`)
 
-Create or edit `backend/.env` with the following variables:
+Copy `backend/.env.example` to `backend/.env` and supply your actual key:
 
 ```ini
 # Select the active LLM provider ('groq' or 'cerebras')
 LLM_PROVIDER=groq
 
 # Your Groq API key (get one free at https://console.groq.com/keys)
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GROQ_API_KEY=your_groq_api_key_here
 
 # Optional overrides (defaults shown below)
 # GROQ_MODEL=llama-3.3-70b-versatile
 # GROQ_URL=https://api.groq.com/openai/v1/chat/completions
 ```
+
+> **Security Reminder:** Never commit or publicly share `backend/.env`. It is ignored by `.gitignore`.
 
 #### Key Sanitization
 The backend automatically sanitizes keys:
@@ -354,6 +363,6 @@ Navigate to the **Deep Analysis** page and interact with the **AI Analysis Chat 
 | First `/analyze` request takes 10–20 seconds | Hugging Face is downloading the EuroSAT ConvNeXt model weights (~110MB) to local cache. | Wait for initial download to finish; all subsequent requests process in under 300ms. |
 | Upload returns `400: Image already appears to be high-resolution` | Input image exceeds 512×512px. Super-resolution is intended for low-res satellite tiles. | Use a lower-resolution satellite tile (e.g., 64×64 to 256×256 pixels). |
 | Upload returns `400: Image too large for real-time demo` | Image dimension exceeds 2048px. | Scale the image down before uploading to prevent server VRAM exhaustion. |
-| Chat replies with `[Offline Mode]` | `GROQ_API_KEY` is missing or invalid in `backend/.env`, or `LLM_PROVIDER` is misconfigured. | Verify `backend/.env` has `LLM_PROVIDER=groq` and a valid `GROQ_API_KEY=gsk_...`. Restart uvicorn after editing `.env`. |
+| Chat replies with `[Offline Mode]` | `GROQ_API_KEY` is missing or invalid in `backend/.env`, or `LLM_PROVIDER` is misconfigured. | Verify `backend/.env` has `LLM_PROVIDER=groq` and a valid `GROQ_API_KEY=your_groq_api_key_here`. Restart uvicorn after editing `.env`. |
 | Port 8000 or 5173 already in use | Another instance of uvicorn or vite is running. | Kill existing processes or specify alternative ports (`--port 8001` for uvicorn, `--port 5174` for vite). |
 | CORS errors in browser console | Frontend is attempting to connect to a host/port other than `http://127.0.0.1:8000`. | Ensure backend is running at `http://127.0.0.1:8000`. Backend has `allow_origins=["*"]` configured. |

@@ -12,30 +12,42 @@ It features a "Mission Control" aesthetic built with React, Vite, and Tailwind C
 - Python 3.10+
 
 ## 1. Running the Backend
-The backend serves the mock `/enhance` endpoint.
+The backend serves the SwinIR super-resolution, EuroSAT land-cover analysis, and RAG chat agent.
+
+### Environment & LLM Configuration
+1. Navigate to `backend/` and copy the environment template:
+   ```bash
+   cd backend
+   cp .env.example .env
+   # On Windows PowerShell:
+   # Copy-Item .env.example .env
+   ```
+2. Obtain a free Groq API key at [https://console.groq.com/keys](https://console.groq.com/keys).
+3. Put your key in `backend/.env`:
+   ```env
+   LLM_PROVIDER=groq
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+   > **Important Security Rule:** Never commit or publicly share `backend/.env`. It is ignored by `.gitignore`.
+
+### Start the Server
 ```bash
-cd backend
 python -m venv venv
-# Windows
+# Windows:
 .\venv\Scripts\activate
-# Linux/Mac
+# Linux/Mac:
 # source venv/bin/activate
 
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
-The API will be available at `http://localhost:8000`
+The API will be available at `http://localhost:8000` (FastAPI Swagger docs at `http://localhost:8000/docs`).
 
 ## 2. Running the Frontend
-The frontend loads pre-computed telemetry from `/public/results.csv` and sample images.
+The frontend is a React + Vite application with interactive super-resolution comparison, land-cover classification, and AI analysis chat.
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-The app will be available at `http://localhost:5173`
-
-## Known Issues / Next Steps
-- The backend `/enhance` endpoint currently just resizes the image by 4x. GPU inference integration for Real-ESRGAN is pending.
-- Upload functionality in the frontend UI is currently a mockup and needs to be wired to the `/enhance` endpoint.
-- To use your own outputs, replace the dummy images (`sample_X_input.png`, `sample_X_output.png`, `sample_X_reference.png`) and update `results.csv` in the `frontend/public` directory.
+The app will be available at `http://localhost:5173`.

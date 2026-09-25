@@ -69,7 +69,7 @@ export default function GlobeHero({ onLaunchAnalysis, onViewFleet, onSelectScene
             <span className="text-gray-300">GPU ACCELERATED</span>
           </span>
           <span className="text-gray-700">|</span>
-          <span className="text-cyan-400 font-semibold">SIH 2026</span>
+          <span className="text-cyan-400 font-semibold">EARTH OBSERVATION</span>
         </div>
       </div>
 

@@ -115,7 +115,7 @@ export default function SystemTelemetry({ activeSample, isUploading, isAnalyzing
           </li>
           <li className="flex items-start gap-1.5 text-emerald-400">
             <CheckCircle2 size={11} className="mt-0.5 text-emerald-400 flex-shrink-0" />
-            <span>Telemetry validated by SIH 2026</span>
+            <span>Telemetry validated &amp; synchronized</span>
           </li>
         </ul>
       </div>

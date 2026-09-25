@@ -11,8 +11,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+from dotenv import load_dotenv
+
 # Locate and add SwinIR ML directory to python module path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Load local environment variables from backend/.env if present
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 SWINIR_DIR = os.path.join(PROJECT_ROOT, "SIH ML PART", "SwinIR")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")

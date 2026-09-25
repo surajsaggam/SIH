@@ -201,8 +201,10 @@ def chat(session_id: Optional[str], question: str, analysis: Optional[Dict[str, 
         if groq_key.lower().startswith("bearer "):
             groq_key = groq_key[7:].strip()
 
-        if not groq_key:
-            print("[CHAT INFO] GROQ_API_KEY not configured. Serving grounded fallback response.")
+        if not groq_key or groq_key == "your_groq_api_key_here":
+            print("[CHAT CONFIG ERROR] GROQ_API_KEY is missing or set to placeholder in backend/.env. "
+                  "Please create backend/.env from backend/.env.example and set a valid API key from https://console.groq.com/keys.")
+            print("[CHAT INFO] Serving grounded fallback response.")
             fallback_ans = _build_fallback_response(analysis_dict, kb_entry, question)
             history.append({"role": "user", "content": question})
             history.append({"role": "assistant", "content": fallback_ans})

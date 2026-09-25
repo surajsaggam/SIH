@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, AlertTriangle } from 'lucide-react';
 
-export default function ErrorHeatmap({ aiSrc, refSrc }) {
+export default function ErrorHeatmap({ aiSrc, refSrc, isPairedReference = true }) {
   const canvasRef = useRef(null);
   const [mae, setMae] = useState(null);
   const [maxError, setMaxError] = useState(null);
@@ -134,30 +134,30 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.06]">
         <h3 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
           <Activity size={12} className="text-orange-400" />
-          <span>RECONSTRUCTION ERROR // GROUND TRUTH COMPARISON</span>
+          <span>{isPairedReference ? 'RECONSTRUCTION ERROR // GROUND TRUTH COMPARISON' : 'RECONSTRUCTION ERROR // RESIDUAL HEATMAP'}</span>
         </h3>
         <span className="text-[9px] font-mono text-cyan-400 font-semibold px-2 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/20">
-          VENµS PAIRED
+          {isPairedReference ? 'VENµS PAIRED' : 'INPUT REFERENCE'}
         </span>
       </div>
       
-      <div className="flex-1 flex flex-col justify-between">
-        <div className="flex gap-4 mb-4">
+      <div className="flex-1 flex flex-col justify-between min-h-0">
+        <div className="flex-1 min-h-[220px] flex gap-4 mb-4">
           {/* Heatmap Canvas Container */}
-          <div className="flex-1 relative border border-white/10 rounded-lg bg-black overflow-hidden flex items-center justify-center min-h-[180px] max-h-[220px]">
+          <div className="flex-1 h-full min-h-[200px] relative border border-white/10 rounded-lg bg-black overflow-hidden flex items-center justify-center p-2">
             {isComputing && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
                 <span className="text-[10px] font-mono text-cyan-400 animate-pulse">COMPUTING PIXEL ERROR MAP...</span>
               </div>
             )}
-            <canvas ref={canvasRef} className="max-w-full max-h-[220px] object-contain w-full h-auto" />
+            <canvas ref={canvasRef} className="max-w-full max-h-full object-contain block m-auto" />
             <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-[9px] font-mono text-gray-400 border border-white/10 rounded-xs backdrop-blur-sm pointer-events-none">
               PIXEL ERROR RESIDUAL
             </div>
           </div>
           
           {/* Color Scale Bar */}
-          <div className="w-5 flex flex-col border border-white/10 rounded-sm overflow-hidden">
+          <div className="w-5 h-full flex flex-col border border-white/10 rounded-sm overflow-hidden">
             <div 
               className="flex-1 w-full"
               style={{
@@ -165,7 +165,7 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
               }}
             />
           </div>
-          <div className="flex flex-col justify-between text-[9px] font-mono text-gray-500 py-1">
+          <div className="flex flex-col justify-between text-[9px] font-mono text-gray-500 py-1 select-none">
             <span className="text-red-400 font-bold">MAX</span>
             <span className="text-yellow-400 font-semibold">MID</span>
             <span className="text-gray-400">MIN</span>
@@ -173,7 +173,7 @@ export default function ErrorHeatmap({ aiSrc, refSrc }) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mt-auto">
+        <div className="grid grid-cols-2 gap-3 mt-auto pt-2">
           <div className="bg-black/40 border border-white/[0.08] p-3 rounded-lg flex flex-col justify-center">
             <span className="text-[9px] font-mono text-gray-500 font-bold uppercase tracking-widest mb-1">
               MEAN ABSOLUTE ERROR (MAE)
